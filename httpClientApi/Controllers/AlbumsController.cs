@@ -19,7 +19,7 @@ namespace httpClientApi.Controllers
         public IActionResult GetAlbums(){
 
             AlbumResponse response = new AlbumResponse();
-            service.GetAlbums().Wait();
+            service.GetAlbums3().Wait();
             return Ok();
         }
 

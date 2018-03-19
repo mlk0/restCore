@@ -5,6 +5,8 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System;
 using Microsoft.Extensions.Logging;
+using System.Runtime.Serialization.Json;
+using System.Net;
 
 public class JsonPlaceholderClient : IJsonPlaceholderClient
 {
@@ -18,6 +20,8 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
     public async Task GetAlbums(){
        HttpClient client = new HttpClient();
 
+        var serializer = new DataContractJsonSerializer(typeof(List<AlbumDto>));    //using System.Runtime.Serialization.Json;
+
         //client.DefaultRequestHeaders.Accept.Clear();
         //client.DefaultRequestHeaders.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         //client.DefaultRequestHeaders.Add("User-Agent", ".NET Foundation Repository Reporter");
@@ -30,6 +34,34 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
         
     }
 
+    public async Task GetAlbums2()
+    {
+        var client = new HttpClient();
+        var serializer = new DataContractJsonSerializer(typeof(List<AlbumDto>));
+        var streamTask = client.GetStreamAsync("https://jsonplaceholder.typicode.com/albums");
+        var albums = serializer.ReadObject(await streamTask) as List<AlbumDto>;
+        albums.ForEach(a=>Console.WriteLine( $"{a.id} | {a.title} | {a.userId}" ));
+    }
+
+
+
+    public async Task GetAlbums3()
+    {
+        var httpClient = new HttpClient();
+        var httpResponseMessageTask = httpClient.GetAsync("https://jsonplaceholder.typicode.com/albums");
+        var httpResponseMessage = await httpResponseMessageTask;
+        if(httpResponseMessage.StatusCode == HttpStatusCode.OK){
+            var contentStream = httpResponseMessage.Content.ReadAsStreamAsync();
+
+            var serializer = new DataContractJsonSerializer(typeof(List<AlbumDto>));
+            var contentObject = serializer.ReadObject(await contentStream);
+            var content = contentObject as List<AlbumDto>;
+            content.ForEach(a=>Console.WriteLine( $"{a.id} | {a.title} | {a.userId}" ));
+
+
+            // httpResponseMessage.Headers.GetValues
+        }
+    }
 
     public List<AlbumDto> LoadAlbums()
     {
@@ -46,6 +78,9 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
 public interface IJsonPlaceholderClient
 {
      Task GetAlbums();
+     Task GetAlbums2();
+
+     Task GetAlbums3();
     List<AlbumDto> LoadAlbums();
 }
 
