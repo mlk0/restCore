@@ -8,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using System.Runtime.Serialization.Json;
 using System.Net;
 using AutoMapper;
+using Newtonsoft.Json;
+using System.Text;
 
 public class JsonPlaceholderClient : IJsonPlaceholderClient
 {
@@ -83,6 +85,15 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
         return result;
     }
 
+    public async Task<PostDto> LoadPost(int postId)
+    {
+        var client = new HttpClient();
+        var postResponseJson = await client.GetStringAsync( $"https://jsonplaceholder.typicode.com/posts/{postId}");
+        var postResponse = JsonConvert.DeserializeObject<PostClientResponse>(postResponseJson);
+        var postDto = this.mapper.Map<PostClientResponse, PostDto>(postResponse);
+        return postDto;
+    }
+
     public async Task<List<PostDto>> LoadPosts()
     {
         List<PostDto> posts = new List<PostDto>();
@@ -97,6 +108,37 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
 
         return posts;
     }
+
+
+
+    public async Task<PostDto> SavePost(PostDto post)
+    {
+        PostDto result = null;
+        var jsonContent = new StringContent(JsonConvert.SerializeObject(post), encoding: Encoding.UTF8, mediaType: "application/json");
+        this.logger.LogInformation(jsonContent.ToString());
+
+        var client = new HttpClient();
+        HttpResponseMessage postResult = await client.PostAsync("https://jsonplaceholder.typicode.com/posts", jsonContent);
+        if (postResult.StatusCode == HttpStatusCode.Created)
+        {
+            this.logger.LogError("Post succeeded");
+            var contentAsString = await postResult.Content.ReadAsStringAsync();
+            if (!String.IsNullOrEmpty(contentAsString))
+            {
+                var postClientResponse = JsonConvert.DeserializeObject<PostClientResponse>(contentAsString);
+                if (postClientResponse != null)
+                {
+                    result = this.mapper.Map<PostClientResponse, PostDto>(postClientResponse);
+                }
+            }
+
+        }
+
+
+        return result;
+    }
+
+
 }
 
 public interface IJsonPlaceholderClient
@@ -107,6 +149,10 @@ public interface IJsonPlaceholderClient
      Task GetAlbums3();
     Task<List<AlbumDto>> LoadAlbums();
     Task<List<PostDto>> LoadPosts();
+    Task<PostDto> LoadPost(int postId);
+    
+
+    Task<PostDto> SavePost(PostDto post);
 }
 
  
