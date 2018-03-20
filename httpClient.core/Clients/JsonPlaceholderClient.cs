@@ -7,14 +7,17 @@ using System;
 using Microsoft.Extensions.Logging;
 using System.Runtime.Serialization.Json;
 using System.Net;
+using AutoMapper;
 
 public class JsonPlaceholderClient : IJsonPlaceholderClient
 {
     private readonly ILogger<JsonPlaceholderClient> logger;
+    private readonly IMapper mapper;
 
-    public JsonPlaceholderClient(ILogger<JsonPlaceholderClient> logger)
+    public JsonPlaceholderClient(ILogger<JsonPlaceholderClient> logger, IMapper mapper)
     {
         this.logger = logger;
+        this.mapper = mapper;
     }
 
     public async Task GetAlbums(){
@@ -63,15 +66,36 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
         }
     }
 
-    public List<AlbumDto> LoadAlbums()
+    public async Task<List<AlbumDto>> LoadAlbums()
     {
         List<AlbumDto> result = new List<AlbumDto>();
 
-        //1. call the external service
-
-        //2. map the response to dto
-
+        var client = new HttpClient();
+        var httpResponseMessageTask =  client.GetAsync("https://jsonplaceholder.typicode.com/albums");
+        var httpResponseMessage = await httpResponseMessageTask;
+        if(httpResponseMessage.StatusCode == HttpStatusCode.OK){
+            var contentStream = httpResponseMessage.Content.ReadAsStreamAsync();
+            var serializer = new DataContractJsonSerializer(typeof(List<AlbumClientResponse>));
+            var clientResponse = serializer.ReadObject(await contentStream) as List<AlbumClientResponse>;
+            result = this.mapper.Map<List<AlbumClientResponse>, List<AlbumDto>>(clientResponse);
+        }
+  
         return result;
+    }
+
+    public async Task<List<PostDto>> LoadPosts()
+    {
+        List<PostDto> posts = new List<PostDto>();
+        var client = new HttpClient();
+        var httpResponseMessage = await client.GetAsync("https://jsonplaceholder.typicode.com/posts");
+        if(httpResponseMessage.StatusCode == HttpStatusCode.OK){
+            var contentStream = httpResponseMessage.Content.ReadAsStreamAsync();
+            var serializer = new DataContractJsonSerializer(typeof(List<PostClientResponse>));
+            var postClientResponseList = serializer.ReadObject(await contentStream) as List<PostClientResponse>;
+            posts = this.mapper.Map<List<PostClientResponse>, List<PostDto>>(postClientResponseList);
+        }
+
+        return posts;
     }
 }
 
@@ -81,7 +105,8 @@ public interface IJsonPlaceholderClient
      Task GetAlbums2();
 
      Task GetAlbums3();
-    List<AlbumDto> LoadAlbums();
+    Task<List<AlbumDto>> LoadAlbums();
+    Task<List<PostDto>> LoadPosts();
 }
 
  
