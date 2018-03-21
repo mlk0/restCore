@@ -16,6 +16,8 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
     private readonly ILogger<JsonPlaceholderClient> logger;
     private readonly IMapper mapper;
 
+    private HttpClient client = new HttpClient();
+
     public JsonPlaceholderClient(ILogger<JsonPlaceholderClient> logger, IMapper mapper)
     {
         this.logger = logger;
@@ -111,6 +113,39 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
 
 
 
+
+
+    public async Task<List<PostDto>> LoadPostsX(){
+
+        var request = new HttpRequestMessage();
+        request.Method = HttpMethod.Get;
+        request.RequestUri = new Uri("https://jsonplaceholder.typicode.com/posts");
+         
+        request.Headers.Accept.Clear();
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "rtyguhjhgtedrtfyguhihygt45678hgftrd5r6ftg7yhuihygtf");
+
+        this.client.Timeout = new TimeSpan(0,0,3);
+        var response = await this.client.SendAsync(request);
+
+        List<PostDto> result = new List<PostDto>();
+        if(response.StatusCode == HttpStatusCode.OK){
+            var responseAsJson = await response.Content.ReadAsStringAsync();
+            var posts = JsonConvert.DeserializeObject<List<PostClientResponse>>(responseAsJson);
+            var postDtoList = this.mapper.Map<List<PostClientResponse>, List<PostDto>>(posts);
+            result = postDtoList;
+        }
+
+        return result;
+    }
+
+
+
+
+
+
+
     public async Task<PostDto> SavePost(PostDto post)
     {
         PostDto result = null;
@@ -139,6 +174,32 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
     }
 
 
+    public async Task<PostDto> SavePost2(PostDto post){
+
+        PostDto result = null;
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://jsonplaceholder.typicode.com/posts"){
+            Content = new StringContent(JsonConvert.SerializeObject(post))
+        };
+        
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "asdasdasd");
+        request.Headers.Accept.Clear();
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+
+        var httpResponseMessage = await this.client.SendAsync(request);
+        if(httpResponseMessage.StatusCode == HttpStatusCode.Created){
+
+            var jsonContent = await httpResponseMessage.Content.ReadAsStringAsync();
+            var postClientRespone = JsonConvert.DeserializeObject<PostClientResponse>(jsonContent);
+             result = this.mapper.Map<PostClientResponse, PostDto>(postClientRespone);
+        }
+
+
+        return result;
+    }
+
+
+
 }
 
 public interface IJsonPlaceholderClient
@@ -153,6 +214,10 @@ public interface IJsonPlaceholderClient
     
 
     Task<PostDto> SavePost(PostDto post);
+    Task<PostDto> SavePost2(PostDto post);
+    
+
+    Task<List<PostDto>> LoadPostsX();
 }
 
  

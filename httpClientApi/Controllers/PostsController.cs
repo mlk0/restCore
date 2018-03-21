@@ -29,6 +29,17 @@ namespace httpClientApi.Controllers
 
         }
 
+        [HttpGet("all")]
+        public IActionResult GetPosts2()
+        {
+            var posts = this.client.LoadPostsX().Result;
+            var postResponse = this.mapper.Map<List<PostDto>, List<PostResponse>>(posts);
+            return Ok(postResponse);
+
+        }
+
+
+
         [HttpGet("{postId}", Name = "GetPostByPostId")]
         public IActionResult GetPost(int postId)
         {
@@ -38,7 +49,7 @@ namespace httpClientApi.Controllers
 
         }
 
-        [HttpPost]
+//        [HttpPost]
         public IActionResult PostPost([FromBody] PostRequest newPost)
         {
             var postDto = this.mapper.Map<PostRequest, PostDto>(newPost);
@@ -49,6 +60,23 @@ namespace httpClientApi.Controllers
             return CreatedAtRoute("GetPostByPostId", new { postId = postResponse.id }, postResponse);
 
         }
+
+
+
+
+        [HttpPost]
+        public IActionResult PostPost2([FromBody] PostRequest newPost)
+        {
+            var postDto = this.mapper.Map<PostRequest, PostDto>(newPost);
+            var result = this.client.SavePost2(postDto).Result;
+            var postResponse = this.mapper.Map<PostDto, PostResponse>(result);
+
+            //return the 201 with the location header to the route that is associted with the name cityPointOfInterest
+            return CreatedAtRoute("GetPostByPostId", new { postId = postResponse.id }, postResponse);
+
+        }
+
+        
 
     }
 }
