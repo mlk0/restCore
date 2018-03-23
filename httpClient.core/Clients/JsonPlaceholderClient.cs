@@ -16,7 +16,7 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
     private readonly ILogger<JsonPlaceholderClient> logger;
     private readonly IMapper mapper;
 
-    private HttpClient client = new HttpClient();
+    private HttpClient httpClient = new HttpClient();
 
     public JsonPlaceholderClient(ILogger<JsonPlaceholderClient> logger, IMapper mapper)
     {
@@ -70,27 +70,58 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
         }
     }
 
+
+    
+
+
     public async Task<List<AlbumDto>> LoadAlbums()
     {
-        List<AlbumDto> result = new List<AlbumDto>();
 
-        var client = new HttpClient();
-        var httpResponseMessageTask =  client.GetAsync("https://jsonplaceholder.typicode.com/albums");
+        List<AlbumDto> result = new List<AlbumDto>();
+        
+        var httpClientHandler = new HttpClientHandler
+        { 
+            Proxy = new WebProxy("http://net-inspect-2.dhltd.corp:8080",false)
+            { 
+                UseDefaultCredentials=true
+            }
+        };
+
+        this.httpClient = new HttpClient(httpClientHandler);
+        // this.httpClient = new HttpClient();
+
+
+        var httpResponseMessageTask =  this.httpClient.GetAsync("https://jsonplaceholder.typicode.com/albums");
         var httpResponseMessage = await httpResponseMessageTask;
+        logger.LogInformation($"httpResponseMessage.StatusCode : {httpResponseMessage.StatusCode}");
+
         if(httpResponseMessage.StatusCode == HttpStatusCode.OK){
             var contentStream = httpResponseMessage.Content.ReadAsStreamAsync();
             var serializer = new DataContractJsonSerializer(typeof(List<AlbumClientResponse>));
             var clientResponse = serializer.ReadObject(await contentStream) as List<AlbumClientResponse>;
             result = this.mapper.Map<List<AlbumClientResponse>, List<AlbumDto>>(clientResponse);
         }
+        else{
+                var contentString = await httpResponseMessage.Content.ReadAsStringAsync();
+                logger.LogInformation(contentString);
+        }
   
         return result;
     }
+ 
 
     public async Task<PostDto> LoadPost(int postId)
     {
-        var client = new HttpClient();
-        var postResponseJson = await client.GetStringAsync( $"https://jsonplaceholder.typicode.com/posts/{postId}");
+        var httpClientHandler = new HttpClientHandler
+        { 
+            Proxy = new WebProxy("http://net-inspect-2.dhltd.corp:8080",false)
+            { 
+                UseDefaultCredentials=true
+            }
+        };
+
+        this.httpClient = new HttpClient(httpClientHandler);
+        var postResponseJson = await this.httpClient.GetStringAsync( $"https://jsonplaceholder.typicode.com/posts/{postId}");
         var postResponse = JsonConvert.DeserializeObject<PostClientResponse>(postResponseJson);
         var postDto = this.mapper.Map<PostClientResponse, PostDto>(postResponse);
         return postDto;
@@ -117,6 +148,9 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
 
     public async Task<List<PostDto>> LoadPostsX(){
 
+       
+
+
         var request = new HttpRequestMessage();
         request.Method = HttpMethod.Get;
         request.RequestUri = new Uri("https://jsonplaceholder.typicode.com/posts");
@@ -126,8 +160,18 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
 
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "rtyguhjhgtedrtfyguhihygt45678hgftrd5r6ftg7yhuihygtf");
 
-        this.client.Timeout = new TimeSpan(0,0,3);
-        var response = await this.client.SendAsync(request);
+        this.httpClient.Timeout = new TimeSpan(0,0,3);
+
+        var httpClientHandler = new HttpClientHandler
+        { 
+            Proxy = new WebProxy("http://net-inspect-2.dhltd.corp:8080",false)
+            { 
+                UseDefaultCredentials=true
+            }
+        };
+        this.httpClient = new HttpClient(httpClientHandler);
+
+        var response = await this.httpClient.SendAsync(request);
 
         List<PostDto> result = new List<PostDto>();
         if(response.StatusCode == HttpStatusCode.OK){
@@ -186,7 +230,7 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
 
-        var httpResponseMessage = await this.client.SendAsync(request);
+        var httpResponseMessage = await this.httpClient.SendAsync(request);
         if(httpResponseMessage.StatusCode == HttpStatusCode.Created){
 
             var jsonContent = await httpResponseMessage.Content.ReadAsStringAsync();
@@ -221,3 +265,28 @@ public interface IJsonPlaceholderClient
 }
 
  
+//  public class WebProxy : IWebProxy
+// {
+//     public WebProxy(string proxyUri) : this(new Uri(proxyUri))
+//     {
+//     }
+
+//     public WebProxy(Uri proxyUri)
+//     {
+//         this.ProxyUri = proxyUri;
+//     }
+
+//     public Uri ProxyUri { get; set; }
+
+//     public ICredentials Credentials { get; set; }
+
+//     public Uri GetProxy(Uri destination)
+//     {
+//         return this.ProxyUri;
+//     }
+
+//     public bool IsBypassed(Uri host)
+//     {
+//         return false; /* Proxy all requests */
+//     }
+// }

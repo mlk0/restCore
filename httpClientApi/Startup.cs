@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using AutoMapper;
 
+
+ 
+
 namespace httpClientApi
 {
     public class Startup
@@ -24,10 +27,31 @@ namespace httpClientApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
+            // services.AddProxy(options =>
+            // {
+            //     options.PrepareRequest = (originalRequest, message) =>
+            //     {
+            //         message.Headers.Add("X-Forwarded-Host", originalRequest.Host.Host);
+            //         return Task.FromResult(0);
+            //     };
+            // });
+
+            services.Configure<IISOptions>(options => 
+            {
+                options.ForwardClientCertificate = false;
+                options.AutomaticAuthentication = true;
+                options.AuthenticationDisplayName = null;
+            });
+
+
+
             //services.AddAutoMapper();
             services.AddAutoMapper();
             services.AddMvc();
             services.AddTransient<IJsonPlaceholderClient, JsonPlaceholderClient>();
+
+            services.AddLogging();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -38,7 +62,7 @@ namespace httpClientApi
                 app.UseDeveloperExceptionPage();
             }
 
-            
+
             app.UseMvc();
         }
     }

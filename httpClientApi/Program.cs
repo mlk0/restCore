@@ -18,7 +18,7 @@ namespace httpClientApi
         }
 
         public static IWebHost BuildWebHost(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
+            WebHost.CreateDefaultBuilder(args) //configures Kestrel as the web server and enables IIS integration by configuring the base path and port for the ASP.NET Core Module
                 .UseStartup<Startup>()
                 .Build();
     }
