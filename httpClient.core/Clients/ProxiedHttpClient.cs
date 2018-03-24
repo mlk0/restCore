@@ -20,7 +20,6 @@ namespace httpClient.core.Clients
         public Uri ProxyUrl { get { return this._proxyUri; } }
 
         public bool UseProxy { get { return this._useProxy; } }
-
         public ProxiedHttpClient(IConfiguration config)
         {
             this._config = config;
@@ -28,18 +27,16 @@ namespace httpClient.core.Clients
             HttpClientHandler httpClientHandler = null;
 
             var useProxyString = this._config.GetSection("proxySettings").GetSection("useProxy").Value;
-            bool useProxy = false;
-            if (bool.TryParse(useProxyString, out useProxy) && useProxy)
+            if (bool.TryParse(useProxyString, out this._useProxy) && this._useProxy)
             {
                 var proxyUriString = this._config.GetSection("proxySettings").GetSection("proxyAddress").Value;
 
-                Uri proxyUri = null;
 
-                if (System.Uri.TryCreate(proxyUriString, UriKind.Absolute, out proxyUri))
+                if (System.Uri.TryCreate(proxyUriString, UriKind.Absolute, out this._proxyUri))
                 {
                     httpClientHandler = new HttpClientHandler
                     {
-                        Proxy = new WebProxy(proxyUri, true)
+                        Proxy = new WebProxy(this._proxyUri, true)
                         {
                             UseDefaultCredentials = true
                         }
@@ -49,7 +46,7 @@ namespace httpClient.core.Clients
             }
 
 
-            if (this._httpClient != null)
+            if (httpClientHandler != null)
             {
                 this._httpClient = new HttpClient(httpClientHandler);
             }

@@ -9,9 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using AutoMapper;
-
-
- 
+using httpClient.core.Clients;
 
 namespace httpClientApi
 {
@@ -39,6 +37,7 @@ namespace httpClientApi
             services.AddAutoMapper();
             services.AddMvc();
             services.AddTransient<IJsonPlaceholderClient, JsonPlaceholderClient>();
+            services.AddSingleton<IProxiedHttpClient, ProxiedHttpClient>();
 
             services.AddLogging();
         }

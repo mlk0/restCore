@@ -30,5 +30,14 @@ namespace httpClientApi.Controllers
             return Ok(response);
         }
 
+        [HttpGet("all")]
+        public IActionResult GetAlbumsY(){
+
+            var albums = service.LoadAlbumsY().Result;
+            var response = this.mapper.Map<List<AlbumDto>, List<AlbumResponse>>(albums);
+
+            return Ok(response);
+        }
+
     }
 }

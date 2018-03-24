@@ -10,18 +10,20 @@ using System.Net;
 using AutoMapper;
 using Newtonsoft.Json;
 using System.Text;
+using httpClient.core.Clients;
 
 public class JsonPlaceholderClient : IJsonPlaceholderClient
 {
     private readonly ILogger<JsonPlaceholderClient> logger;
     private readonly IMapper mapper;
-
+    private readonly IProxiedHttpClient _httpClient;
     private HttpClient httpClient = new HttpClient();
 
-    public JsonPlaceholderClient(ILogger<JsonPlaceholderClient> logger, IMapper mapper)
+    public JsonPlaceholderClient(ILogger<JsonPlaceholderClient> logger, IMapper mapper, IProxiedHttpClient httpClient)
     {
         this.logger = logger;
         this.mapper = mapper;
+        this._httpClient = httpClient;
     }
 
     public async Task GetAlbums(){
@@ -73,6 +75,27 @@ public class JsonPlaceholderClient : IJsonPlaceholderClient
 
     
 
+    public async Task<List<AlbumDto>> LoadAlbumsY(){
+
+        List<AlbumDto> result = new List<AlbumDto>();
+       
+        var httpResponseMessageTask =  this._httpClient.Instance.GetAsync("https://jsonplaceholder.typicode.com/albums");
+        var httpResponseMessage = await httpResponseMessageTask;
+        logger.LogInformation($"httpResponseMessage.StatusCode : {httpResponseMessage.StatusCode}");
+
+        if(httpResponseMessage.StatusCode == HttpStatusCode.OK){
+            var contentStream = httpResponseMessage.Content.ReadAsStreamAsync();
+            var serializer = new DataContractJsonSerializer(typeof(List<AlbumClientResponse>));
+            var clientResponse = serializer.ReadObject(await contentStream) as List<AlbumClientResponse>;
+            result = this.mapper.Map<List<AlbumClientResponse>, List<AlbumDto>>(clientResponse);
+        }
+        else{
+                var contentString = await httpResponseMessage.Content.ReadAsStringAsync();
+                logger.LogInformation(contentString);
+        }
+  
+        return result;
+    }
 
     public async Task<List<AlbumDto>> LoadAlbums()
     {
@@ -253,6 +276,8 @@ public interface IJsonPlaceholderClient
 
      Task GetAlbums3();
     Task<List<AlbumDto>> LoadAlbums();
+    Task<List<AlbumDto>> LoadAlbumsY();
+    
     Task<List<PostDto>> LoadPosts();
     Task<PostDto> LoadPost(int postId);
     
