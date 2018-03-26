@@ -16,7 +16,7 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="6.2.2" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="3.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.6" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.1" />
   </ItemGroup>
 
@@ -28,4 +28,8 @@
     <ProjectReference Include="..\httpClient.core\httpClient.core.csproj" />
   </ItemGroup>
 
+  <Target Name="CreateLogsFolder" AfterTargets="Publish">
+    <MakeDir Directories="$(PublishDir)Logs" Condition="!Exists('$(PublishDir)Logs')" />
+    <WriteLinesToFile File="$(PublishDir)Logs\.log" Lines="Post Publish Generated file" Overwrite="True" Condition="!Exists('$(PublishDir)Logs\.log')" />
+  </Target>
 </Project>
